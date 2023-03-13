@@ -25,28 +25,31 @@ def bagged_clf(X_seed, X_poblacion, random_state, T=50, clf='rf', feature_import
     pred = np.zeros(U)
     # initialize denominador de predicciones
     n = np.zeros(U)
+    # initialize feature importance
+    importance = np.zeros(X_seed.shape[1])
+
     # bagging
     for t in range(T):
         # get sample
-        idx_train = random_state.choice(U, K, replace=True)
-        X_train = np.concatenate([X_seed, X_poblacion[idx_train,:]])
+        idx_train = np.random.choice(U, K, replace=True)
+        X_train = np.concatenate([X_seed, X_poblacion.iloc[idx_train,:]])
         # train
         if clf=='rf':
-            clf = RandomForestClassifier(random_state=random_state, **kwargs_clf)
+            clf = RandomForestClassifier(**kwargs_clf)
         if clf=='logistic':
-            clf = LogisticRegression(random_state=random_state, **kwargs_clf)
+            clf = LogisticRegression(**kwargs_clf)
         if clf=='tree':
-            clf = DecisionTreeClassifier(random_state=random_state, **kwargs_clf)
+            clf = DecisionTreeClassifier(**kwargs_clf)
         if clf=='knn':
-            clf = KNeighborsClassifier(random_state=random_state, **kwargs_clf)
+            clf = KNeighborsClassifier(**kwargs_clf)
         clf.fit(X_train, y_train)
         # predict OOB
         idx_oob = np.full(U, True)
         idx_oob[idx_train] = False
-        _pred = clf.predict_proba(X_poblacion[idx_oob,:])[:,clf.classes_ == 1].ravel()
+        _pred = clf.predict_proba(X_poblacion.iloc[idx_oob,:])[:,clf.classes_ == 1].ravel()
         pred[idx_oob] += _pred
         n[idx_oob] += 1
-        importance += clf.feature_importance_
+        importance += clf.feature_importances_
     scores = pred / n
     if feature_importance:
         feat_importance = importance / T
