@@ -107,7 +107,7 @@ def scores_bagged_clf(X_seed, X_poblacion, random_state, T=50, clf='rf', **kwarg
     scores = pred / n
     return scores
 
-def scores_smartbagged_clf(X_seed, X_poblacion, random_state, T=50, clf='rf', l1=1, l2=1, **kwargs_clf):
+def scores_smartbagged_clf(X_seed, X_poblacion, random_state, T=50, clf='rf', l1=1, l2=1, e1=1, e2=1, **kwargs_clf):
     """
     Returns avg of oob predictions of classifier para la poblacion
     Param:
@@ -120,7 +120,8 @@ def scores_smartbagged_clf(X_seed, X_poblacion, random_state, T=50, clf='rf', l1
     U = X_poblacion.shape[0]
     # se entrena con una muestra balanceada
     # vector target: primero seed - luego poblacion
-    y_train = np.concatenate([np.ones(K), np.zeros(K)])
+    y_poblacion = np.zeros(U)
+#     y_train = np.concatenate([np.ones(K), np.zeros(K)])
     # initialize numerador de predicciones
     pred = np.zeros(U)
     # initialize denominador de predicciones
@@ -136,8 +137,9 @@ def scores_smartbagged_clf(X_seed, X_poblacion, random_state, T=50, clf='rf', l1
         # get sample
         idx_train = np.random.choice(U, K, replace=True)
         X_train = np.concatenate([X_seed, X_poblacion[idx_train,:]])
+        # y_train vector
+        y_train = np.concatenate([np.ones(K), y_poblacion[idx_train]])
         # weights
-        print(w_poblacion[idx_train], "/n")
         weights = np.concatenate([w_seed, w_poblacion[idx_train]])      
         # train
         if clf=='rf':
@@ -160,5 +162,7 @@ def scores_smartbagged_clf(X_seed, X_poblacion, random_state, T=50, clf='rf', l1
             _wupdate = np.zeros(U)
             _wupdate[idx_oob] = _pred
             w_poblacion += (-_wupdate/T*l2) 
+        if t > (T*e1):
+            y_poblacion[(pred/n)>e2] = 1
     scores = pred / n
     return scores
